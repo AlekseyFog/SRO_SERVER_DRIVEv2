@@ -3,12 +3,12 @@ import Vue from 'https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.esm.browser.js
 
 Vue.component('loader', {
     template: `
-    <div style="display: flex; justify-content: center; align-items: center"
-         <div class="spinner-border" role="status">
-             <span class="visually-hidden">Loading...</span>
-         </div>
+    <div style="display: flex;justify-content: center;align-items: center">
+      <div class="spinner-border" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
     </div>
-    `
+  `
 })
 
 new Vue({
@@ -20,7 +20,7 @@ new Vue({
                 name: '',
                 value: ''
             },
-            contacts: [],
+            contacts: []
         }
     },
     computed: {
@@ -29,18 +29,25 @@ new Vue({
         }
     },
     methods: {
-        createContact() {
+        async createContact() {
             const {...contact} = this.form
 
-            this.contacts.push({...contact, id: Date.now(), marked: false})
+            const newContact = await request('/api/contacts', 'POST', contact)
+
+            this.contacts.push(newContact)
 
             this.form.name = this.form.value = ''
         },
-        markContact(id) {
+        async markContact(id) {
             const contact = this.contacts.find(c => c.id === id)
-            contact.marked = true
+            const updated = await request(`/api/contacts/${id}`, 'PUT', {
+                ...contact,
+                marked: true
+            })
+            contact.marked = updated.marked
         },
-        removeContact(id) {
+        async removeContact(id) {
+            await request(`/api/contacts/${id}`, 'DELETE')
             this.contacts = this.contacts.filter(c => c.id !== id)
         }
     },
@@ -68,6 +75,6 @@ async function request(url, method = 'GET', data = null) {
         })
         return await response.json()
     } catch (e) {
-        console.warn('error', e.message)
+        console.warn('Error:', e.message)
     }
 }
